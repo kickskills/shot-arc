@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#102b46">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shot Arc">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Shot Arc｜3ポイントシュート軌道シミュレーター</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18212b;background:#f3f5f7}
+*{box-sizing:border-box} body{margin:0;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom))}
+main{max-width:1100px;margin:auto}
+h1{font-size:clamp(22px,4vw,30px);margin:4px 0 6px}
+.sub{color:#586574;margin:0 0 18px;font-size:14px}
+.layout{display:grid;grid-template-columns:310px 1fr;gap:16px}
+.panel{background:white;border:1px solid #dce2e8;border-radius:14px;padding:18px;box-shadow:0 2px 8px #17212b0a}
+h2{font-size:17px;margin:0 0 14px}
+.field{margin:14px 0}
+label{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:600;margin-bottom:7px}
+input[type=number]{width:92px;padding:8px;border:1px solid #cbd3dc;border-radius:8px;font-size:15px;text-align:right}
+input[type=range]{width:100%;accent-color:#1769aa;min-height:28px;touch-action:pan-y}
+.unit{color:#647181;font-weight:400}
+button{border:0;border-radius:9px;background:#1769aa;color:white;padding:10px 14px;font-size:14px;font-weight:650;cursor:pointer}
+button.secondary{background:#e8eef4;color:#24384a}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.metric{background:#f4f7fa;border-radius:10px;padding:12px}
+.metric small{display:block;color:#647181;font-size:12px;margin-bottom:5px}
+.metric strong{font-size:22px;letter-spacing:-.5px}
+.metric em{font-size:12px;font-style:normal;color:#647181;margin-left:3px}
+svg{width:100%;height:auto;display:block;background:#fbfcfd;border:1px solid #e2e7ec;border-radius:10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#536170;margin:10px 0}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+th,td{padding:9px 7px;border-bottom:1px solid #e8edf1;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:#5b6876;font-weight:600}
+.note{font-size:12px;line-height:1.6;color:#687584;margin:12px 0 0}
+.status{font-size:13px;color:#506070;margin:10px 0}
+@media(max-width:760px){body{padding:12px}.layout{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<main>
+<h1>3ポイントシュート軌道シミュレーター</h1>
+<p class="sub">Shot Arc｜3ポイントシュート軌道シミュレーター</p>
+<div class="layout">
+<section class="panel">
+<h2>選手・シュート条件</h2>
+<div class="field">
+<label for="height">選手の身長 <span><input id="height" type="number" min="140" max="220" step="1" value="180"> <span class="unit">cm</span></span></label>
+<input id="heightRange" type="range" min="140" max="220" value="180">
+</div>
+<div class="field">
+<label for="release">リリース高 <span><input id="release" type="number" min="1.8" max="3.5" step="0.01" value="2.80"> <span class="unit">m</span></span></label>
+<input id="releaseRange" type="range" min="1.8" max="3.5" step="0.01" value="2.80">
+</div>
+<div class="field">
+<label for="distance">水平距離 <span><input id="distance" type="number" min="4" max="9" step="0.05" value="6.75"> <span class="unit">m</span></span></label>
+<input id="distanceRange" type="range" min="4" max="9" step="0.05" value="6.75">
+</div>
+<div class="field">
+<label for="entry">目標入射角 <span><input id="entry" type="number" min="30" max="60" step="1" value="45"> <span class="unit">°</span></span></label>
+<input id="entryRange" type="range" min="30" max="60" step="1" value="45">
+</div>
+<div class="field">
+<label for="rim">リング高 <span><input id="rim" type="number" min="2.9" max="3.2" step="0.01" value="3.05"> <span class="unit">m</span></span></label>
+<input id="rimRange" type="range" min="2.9" max="3.2" step="0.01" value="3.05">
+</div>
+<div class="actions">
+<button id="reset">初期値に戻す</button>
+
+</div>
+<p class="note">※身長は選手情報として入力します。軌道計算には、実測したリリース高を使用してください。身長だけからリリース高を正確に推定することはできません。</p>
+</section>
+
+<section class="panel">
+<h2>計算結果とボール軌道</h2>
+<div class="metrics">
+<div class="metric"><small>必要な初速</small><strong id="speed">—</strong><em>m/s</em></div>
+<div class="metric"><small>リリース角度</small><strong id="launch">—</strong><em>°</em></div>
+<div class="metric"><small>最高到達点</small><strong id="apex">—</strong><em>m</em></div>
+<div class="metric"><small>最高点までの距離</small><strong id="apexX">—</strong><em>m</em></div>
+<div class="metric"><small>飛行時間</small><strong id="flight">—</strong><em>秒</em></div>
+<div class="metric"><small>リング到達時の速度</small><strong id="arrival">—</strong><em>m/s</em></div>
+</div>
+<svg id="chart" viewBox="0 0 760 390" role="img" aria-label="ボールの軌道図">
+<g id="plot"></g>
+</svg>
+<div class="legend">
+<span><i class="dot" style="background:#1769aa"></i>現在の設定</span>
+<span><i class="dot" style="background:#e49a35"></i>角度比較</span>
+</div>
+<div class="status" id="status">—</div>
+<h2 style="margin-top:18px">入射角の比較</h2>
+<table>
+<thead><tr><th>入射角</th><th>必要初速</th><th>最高到達点</th><th>リリース角度</th></tr></thead>
+<tbody id="compare"></tbody>
+</table>
+<p class="note">計算は重力加速度9.81m/s²、空気抵抗・ボール回転なしの理想的な放物運動です。表示値は理論上、指定した位置と入射角でリング中心に到達するための条件です。成功率や最適角度を直接示すものではありません。</p>
+</section>
+</div>
+</main>
+<script>
+if ("serviceWorker" in navigator) { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {})); }
+
+const $ = id => document.getElementById(id);
+const g = 9.81;
+const fields = ['height','release','distance','entry','rim'];
+const ranges = {height:'heightRange',release:'releaseRange',distance:'distanceRange',entry:'entryRange',rim:'rimRange'};
+function setVal(id,v){$(id).value=v;$(ranges[id]).value=v}
+// 数値欄とスライダーを双方向に同期
+function syncFromNumber(id){
+  const numberInput = $(id);
+  const rangeInput = $(ranges[id]);
+  if(numberInput.value === '') return;
+  const min = Number(rangeInput.min), max = Number(rangeInput.max);
+  let value = Number(numberInput.value);
+  if(!Number.isFinite(value)) return;
+  value = Math.min(max, Math.max(min, value));
+  rangeInput.value = String(value);
+  calculate();
+}
+function syncFromRange(id){
+  const numberInput = $(id);
+  const rangeInput = $(ranges[id]);
+  numberInput.value = rangeInput.value;
+  calculate();
+}
+fields.forEach(id=>{
+  $(id).addEventListener('input',()=>syncFromNumber(id));
+  $(id).addEventListener('change',()=>syncFromNumber(id));
+  $(ranges[id]).addEventListener('input',()=>syncFromRange(id));
+  $(ranges[id]).addEventListener('change',()=>syncFromRange(id));
+});
+function solve(H0,D,Hg,alphaDeg){
+ const a=alphaDeg*Math.PI/180;
+ const tanTheta=Math.tan(a)+2*(Hg-H0)/D;
+ const theta=Math.atan(tanTheta);
+ const denom=Math.cos(theta)**2*(Math.tan(theta)+Math.tan(a));
+ if(denom<=0) return null;
+ const v=Math.sqrt(g*D/denom);
+ const vx=v*Math.cos(theta), vy=v*Math.sin(theta);
+ const t=D/vx;
+ const apex=H0+(v*Math.sin(theta))**2/(2*g);
+ const apexX=vx*(v*Math.sin(theta)/g);
+ const vyEnd=vy-g*t;
+ const arrival=Math.hypot(vx,vyEnd);
+ return {theta:theta*180/Math.PI,v,apex,apexX,t,arrival};
+}
+function fmt(n,d=2){return Number.isFinite(n)?n.toFixed(d):'—'}
+function calculate(){
+ const H0=Number($('release').value),D=Number($('distance').value),Hg=Number($('rim').value),alpha=Number($('entry').value);
+ if(!(H0>0&&D>0&&Hg>0&&alpha>0&&alpha<89)){ $('status').textContent='入力値を確認してください。';return; }
+ const result=solve(H0,D,Hg,alpha);
+ if(!result){$('status').textContent='この条件では計算できません。入力値を確認してください。';return;}
+ $('speed').textContent=fmt(result.v);$('launch').textContent=fmt(result.theta,1);
+ $('apex').textContent=fmt(result.apex);$('apexX').textContent=fmt(result.apexX);
+ $('flight').textContent=fmt(result.t,2);$('arrival').textContent=fmt(result.arrival);
+ $('status').textContent=`リング到達時の入射角：${alpha.toFixed(0)}°｜リリースからリングまで：約${fmt(result.t,2)}秒`;
+ draw(H0,D,Hg,result,alpha);
+ const rows=[42,45,48].map(a=>{
+   const r=solve(H0,D,Hg,a);
+   return `<tr><td>${a}°</td><td>${fmt(r.v)} m/s</td><td>${fmt(r.apex)} m</td><td>${fmt(r.theta,1)}°</td></tr>`;
+ }).join('');
+ $('compare').innerHTML=rows;
+}
+function draw(H0,D,Hg,r,alpha){
+ const svg=$('plot'), W=760,H=390, L=58,R=22,T=22,B=44;
+ const maxX=Math.max(D*1.08,r.apexX*1.18), maxY=Math.max(4.5,r.apex+0.35);
+ const sx=x=>L+x/maxX*(W-L-R), sy=y=>H-B-y/maxY*(H-T-B);
+ let s='';
+ // grid
+ for(let y=0;y<=Math.ceil(maxY);y+=1){
+  s+=`<line x1="${L}" y1="${sy(y)}" x2="${W-R}" y2="${sy(y)}" stroke="#e7ebef"/>`;
+  s+=`<text x="${L-10}" y="${sy(y)+4}" text-anchor="end" font-size="11" fill="#718091">${y}m</text>`;
+ }
+ s+=`<line x1="${L}" y1="${sy(0)}" x2="${W-R}" y2="${sy(0)}" stroke="#526170" stroke-width="1.5"/>`;
+ s+=`<line x1="${sx(0)}" y1="${T}" x2="${sx(0)}" y2="${sy(0)}" stroke="#526170"/>`;
+ // trajectory
+ const pts=[];
+ for(let i=0;i<=100;i++){
+  const x=D*i/100;
+  const y=H0+x*Math.tan(r.theta*Math.PI/180)-g*x*x/(2*r.v*r.v*Math.cos(r.theta*Math.PI/180)**2);
+  pts.push(`${sx(x)},${sy(y)}`);
+ }
+ s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="#1769aa" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+ // apex
+ s+=`<circle cx="${sx(r.apexX)}" cy="${sy(r.apex)}" r="5" fill="#1769aa"/>`;
+ s+=`<text x="${sx(r.apexX)+8}" y="${sy(r.apex)-10}" font-size="12" fill="#1769aa">最高点 ${fmt(r.apex)}m</text>`;
+ // release ball and rim
+ s+=`<circle cx="${sx(0)}" cy="${sy(H0)}" r="7" fill="#1769aa" stroke="white" stroke-width="2"/>`;
+ s+=`<text x="${sx(0)+10}" y="${sy(H0)-12}" font-size="12" fill="#334155">リリース</text>`;
+ s+=`<line x1="${sx(D)-18}" y1="${sy(Hg)}" x2="${sx(D)+18}" y2="${sy(Hg)}" stroke="#e49a35" stroke-width="5" stroke-linecap="round"/>`;
+ s+=`<circle cx="${sx(D)}" cy="${sy(Hg)}" r="4" fill="#e49a35"/>`;
+ s+=`<text x="${sx(D)-5}" y="${sy(Hg)-13}" text-anchor="end" font-size="12" fill="#a86612">リング中心</text>`;
+ s+=`<text x="${(sx(0)+sx(D))/2}" y="${H-12}" text-anchor="middle" font-size="12" fill="#718091">水平距離 ${D.toFixed(2)}m</text>`;
+ svg.innerHTML=s;
+}
+$('reset').addEventListener('click',()=>{setVal('height',180);setVal('release',2.80);setVal('distance',6.75);setVal('entry',45);setVal('rim',3.05);calculate();});
+calculate();
+</script>
+</body>
+</html>
